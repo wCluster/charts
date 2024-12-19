@@ -75,7 +75,8 @@ spec:
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-            {{- toYaml .Values.affinity.nodeSelectorTerms | nindent 12 }}
+            nodeSelectorTerms:
+              {{- toYaml .Values.affinity.nodeSelectorTerms | nindent 14 }}
       {{- end }}
 
       tolerations:
