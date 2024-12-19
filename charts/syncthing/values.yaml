@@ -4,8 +4,7 @@ image:
   repository: syncthing/syncthing # https://hub.docker.com/r/syncthing/syncthing
   pullPolicy: IfNotPresent
 
-imagePullSecrets:
-  - "name": "cluster"
+imagePullSecrets: []
 
 environment:
   PUID: "1000"
