@@ -1,0 +1,61 @@
+replicaCount: 1
+
+image:
+  repository: syncthing/syncthing # https://hub.docker.com/r/syncthing/syncthing
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+environment:
+  PUID: "1000"
+  PGID: "1000"
+
+ports:
+  tcpFileTransfer:
+    nodePort: 22000
+
+  udpFileTransfer:
+    nodePort: 22000
+
+ingress:
+  enabled: true
+  annotations: {}
+  ingressClassName: nginx
+  host: syncthing.example.com
+  tls:
+    enabled: true
+    secretName: syncthing-tls
+
+persistence:
+  enabled: false
+  annotations: {}
+  accessMode: ReadWriteOnce
+  storage: 100Gi
+
+affinity:
+  enabled: false
+  nodeSelectorTerms:
+    - matchExpressions:
+        - key: "kubernetes.io/hostname"
+          operator: In
+          values:
+            - "node-1"
+            - "node-2"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+
+healthcheck:
+  enabled: true
+  initialDelaySeconds: 20
+  periodSeconds: 60
+  timeoutSeconds: 10
+  failureThreshold: 3

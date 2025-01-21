@@ -1,0 +1,37 @@
+name: "Release"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - "charts/**"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Login to Helm Registry
+        run: helm registry login ${{ secrets.REGISTRY }}
+      
+
+      - name: Package and Push Helm Charts
+        env:
+          HELM_REGISTRY_URL: registry.wzh.one/charts/
+        run: |
+          for chart in charts/*/; do
+            chart_name=$(basename "$chart")
+            echo "Packaging chart: $chart_name"
+            helm package "$chart" --destination /tmp
+
+            packaged_chart=$(ls /tmp/${chart_name}-*.tgz)
+            echo "Pushing chart: $packaged_chart to $HELM_REGISTRY_URL"
+
+            helm push "$packaged_chart" oci://$HELM_REGISTRY_URL
+          done

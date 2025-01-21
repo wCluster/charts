@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "syncthing.fullname" . }}
+  labels:
+    app: {{ include "syncthing.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "syncthing.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "syncthing.name" . }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: syncthing-data
+          persistentVolumeClaim:
+            claimName: {{ include "syncthing.fullname" . }}
+      {{- end }}
+      
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          env:
+            - name: PUID
+              value: "{{ .Values.environment.PUID }}"
+            - name: PGID
+              value: "{{ .Values.environment.PGID }}"
+
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: syncthing-data
+              mountPath: /var/syncthing
+          {{- end }}
+
+          ports:
+            - name: webui
+              containerPort: 8384
+              protocol: TCP
+            - name: tcp-transfer
+              containerPort: 22000
+              protocol: TCP
+            - name: udp-transfer
+              containerPort: 22000
+              protocol: UDP
+
+          {{- if .Values.healthcheck.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /rest/noauth/health
+              port: 8384
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.healthcheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.healthcheck.periodSeconds }}
+            timeoutSeconds: {{ .Values.healthcheck.timeoutSeconds }}
+            failureThreshold: {{ .Values.healthcheck.failureThreshold }}
+          {{- end }}
+
+      nodeSelector:
+        {{- if .Values.nodeSelector }}
+        {{ toYaml .Values.nodeSelector | nindent 8 }}
+        {{- end }}
+
+      {{- if .Values.affinity.enabled }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              {{- toYaml .Values.affinity.nodeSelectorTerms | nindent 14 }}
+      {{- end }}
+
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+
+      restartPolicy: Always
